@@ -33,18 +33,19 @@ class SlidingWindowRateLimiterTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void WHEN_requests_within_limit_THEN_all_tryAcquire_return_true() {
+    void WHEN_requests_within_limit_THEN_all_tryAcquire_return_zero() {
         for (int i = 0; i < DEFAULT_LIMIT; i++) {
-            assertThat(rateLimiter.tryAcquire()).isTrue();
+            assertThat(rateLimiter.tryAcquire()).isEqualTo(0L);
         }
     }
 
     @Test
-    void WHEN_requests_exceed_limit_within_window_THEN_tryAcquire_returns_false() {
+    void WHEN_requests_exceed_limit_within_window_THEN_tryAcquire_returns_retry_after() {
         for (int i = 0; i < DEFAULT_LIMIT; i++) {
             rateLimiter.tryAcquire();
         }
-        assertThat(rateLimiter.tryAcquire()).isFalse();
+        // oldest = 0, now = 0, retry-after = windowDurationMs - 0 = 1000
+        assertThat(rateLimiter.tryAcquire()).isEqualTo(DEFAULT_WINDOW_MS);
     }
 
     // -------------------------------------------------------------------------
@@ -52,27 +53,22 @@ class SlidingWindowRateLimiterTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void WHEN_oldest_request_exactly_at_window_boundary_THEN_tryAcquire_returns_true() {
-        // Fill the buffer at t=0
+    void WHEN_oldest_request_exactly_at_window_boundary_THEN_tryAcquire_returns_zero() {
         for (int i = 0; i < DEFAULT_LIMIT; i++) {
             rateLimiter.tryAcquire();
         }
-
-        // Advance clock to exactly windowDurationMs — oldest slot now expires
         clock.set(DEFAULT_WINDOW_MS);
-        assertThat(rateLimiter.tryAcquire()).isTrue();
+        assertThat(rateLimiter.tryAcquire()).isEqualTo(0L);
     }
 
     @Test
-    void WHEN_oldest_request_just_inside_window_THEN_tryAcquire_returns_false() {
-        // Fill the buffer at t=0
+    void WHEN_oldest_request_just_inside_window_THEN_tryAcquire_returns_one_ms_retry_after() {
         for (int i = 0; i < DEFAULT_LIMIT; i++) {
             rateLimiter.tryAcquire();
         }
-
-        // Advance clock to one millisecond short of expiry
         clock.set(DEFAULT_WINDOW_MS - 1);
-        assertThat(rateLimiter.tryAcquire()).isFalse();
+        // oldest = 0, now = 999, retry-after = 1000 - 999 = 1
+        assertThat(rateLimiter.tryAcquire()).isEqualTo(1L);
     }
 
     // -------------------------------------------------------------------------
@@ -81,18 +77,16 @@ class SlidingWindowRateLimiterTest {
 
     @Test
     void WHEN_window_expires_THEN_new_requests_are_allowed_again() {
-        // Fill at t=0
         for (int i = 0; i < DEFAULT_LIMIT; i++) {
             rateLimiter.tryAcquire();
         }
-        assertThat(rateLimiter.tryAcquire()).isFalse();
+        assertThat(rateLimiter.tryAcquire()).isGreaterThan(0L);
 
-        // Advance past window — each expired slot frees one permit
         clock.set(DEFAULT_WINDOW_MS);
         for (int i = 0; i < DEFAULT_LIMIT; i++) {
-            assertThat(rateLimiter.tryAcquire()).isTrue();
+            assertThat(rateLimiter.tryAcquire()).isEqualTo(0L);
         }
-        assertThat(rateLimiter.tryAcquire()).isFalse();
+        assertThat(rateLimiter.tryAcquire()).isGreaterThan(0L);
     }
 
     // -------------------------------------------------------------------------
@@ -100,21 +94,21 @@ class SlidingWindowRateLimiterTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void GIVEN_limit_1_WHEN_rapid_calls_THEN_only_first_returns_true() {
+    void GIVEN_limit_1_WHEN_rapid_calls_THEN_only_first_returns_zero() {
         var limiter = new SlidingWindowRateLimiter(1, DEFAULT_WINDOW_MS, clock::get);
 
-        assertThat(limiter.tryAcquire()).isTrue();
-        assertThat(limiter.tryAcquire()).isFalse();
-        assertThat(limiter.tryAcquire()).isFalse();
+        assertThat(limiter.tryAcquire()).isEqualTo(0L);
+        assertThat(limiter.tryAcquire()).isGreaterThan(0L);
+        assertThat(limiter.tryAcquire()).isGreaterThan(0L);
     }
 
     @Test
-    void GIVEN_limit_1_WHEN_window_expires_THEN_next_call_returns_true() {
+    void GIVEN_limit_1_WHEN_window_expires_THEN_next_call_returns_zero() {
         var limiter = new SlidingWindowRateLimiter(1, DEFAULT_WINDOW_MS, clock::get);
 
         limiter.tryAcquire();
         clock.set(DEFAULT_WINDOW_MS);
-        assertThat(limiter.tryAcquire()).isTrue();
+        assertThat(limiter.tryAcquire()).isEqualTo(0L);
     }
 
     // -------------------------------------------------------------------------
@@ -155,6 +149,35 @@ class SlidingWindowRateLimiterTest {
     }
 
     // -------------------------------------------------------------------------
+    // Retry-after precision
+    // -------------------------------------------------------------------------
+
+    @Nested
+    class WHEN_denied_THEN_retry_after_equals_remaining_window_time_class {
+
+        static Stream<org.junit.jupiter.params.provider.Arguments>
+                WHEN_denied_THEN_retry_after_equals_remaining_window_time() {
+            // (clockMs, expectedRetryAfterMs) — buffer pre-filled at t=0, limit=3, window=1000ms
+            return Stream.of(
+                arguments(0L,   1_000L),   // now == oldest → full window remaining
+                arguments(499L,   501L),   // 499ms elapsed → 501ms remaining
+                arguments(999L,     1L)    // 1ms short of expiry
+            );
+        }
+
+        @ParameterizedTest
+        @MethodSource
+        void WHEN_denied_THEN_retry_after_equals_remaining_window_time(
+                long clockMs, long expectedRetryAfterMs) {
+            for (int i = 0; i < DEFAULT_LIMIT; i++) {
+                rateLimiter.tryAcquire();
+            }
+            clock.set(clockMs);
+            assertThat(rateLimiter.tryAcquire()).isEqualTo(expectedRetryAfterMs);
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Interleaved timing: mixed expiry across multiple slots
     // -------------------------------------------------------------------------
 
@@ -163,22 +186,22 @@ class SlidingWindowRateLimiterTest {
 
         static Stream<org.junit.jupiter.params.provider.Arguments>
                 WHEN_requests_arrive_at_different_times_THEN_only_in_window_requests_count() {
-            // (t0RequestCount, t1Ms, t1RequestCount, t2Ms, expectedAtT2)
-            // limit=2, window=1000ms
+            // (t0RequestCount, t1Ms, t1RequestCount, t2Ms, expectedResult)
+            // limit=2, window=1000ms; 0L = permitted, >0 = retry-after ms
             return Stream.of(
-                // 1 request at t=0, 1 at t=500, query at t=1001: t=0 expired, t=500 still active → true
-                arguments(1, 500L, 1, 1001L, true),
-                // 2 requests at t=0, query at t=999: both still active → false
-                arguments(2, 0L,   0, 999L,  false),
-                // 2 requests at t=0, query at t=1000: oldest expired → true
-                arguments(2, 0L,   0, 1000L, true)
+                // 1 req at t=0, 1 at t=500, query at t=1001: oldest(t=0) expired → permitted
+                arguments(1, 500L, 1, 1001L, 0L),
+                // 2 reqs at t=0, query at t=999: oldest(t=0) still active → retry-after=1ms
+                arguments(2, 0L,   0,  999L, 1L),
+                // 2 reqs at t=0, query at t=1000: oldest(t=0) exactly at boundary → permitted
+                arguments(2, 0L,   0, 1000L, 0L)
             );
         }
 
         @ParameterizedTest
         @MethodSource
         void WHEN_requests_arrive_at_different_times_THEN_only_in_window_requests_count(
-                int t0Count, long t1Ms, int t1Count, long t2Ms, boolean expected) {
+                int t0Count, long t1Ms, int t1Count, long t2Ms, long expected) {
             var limiter = new SlidingWindowRateLimiter(2, DEFAULT_WINDOW_MS, clock::get);
 
             for (int i = 0; i < t0Count; i++) {

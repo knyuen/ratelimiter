@@ -1,1 +1,24 @@
-{}
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/hooks/record-prompts.sh --prompt"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/hooks/record-prompts.sh --stop"
+          }
+        ]
+      }
+    ]
+  }
+}

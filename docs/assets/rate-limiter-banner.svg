@@ -192,8 +192,8 @@
       <tspan fill="#ffffff">);</tspan>
     </text>
     <text font-family="monospace" font-size="11.5">
-      <tspan x="14" dy="254" fill="#a29bfe">boolean</tspan>
-      <tspan fill="#ffffff"> ok </tspan>
+      <tspan x="14" dy="254" fill="#a29bfe">long</tspan>
+      <tspan fill="#ffffff"> retryMs </tspan>
       <tspan fill="#fd79a8">=</tspan>
       <tspan fill="#ffffff"> limiter.</tspan>
       <tspan fill="#ffd32a">tryAcquire</tspan>

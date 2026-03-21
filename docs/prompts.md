@@ -120,3 +120,81 @@ All **17 tests pass** (0 failures, 0 skipped). Here's a summary of what was crea
 | `WHEN_requests_arrive_at_different_times_*` (3 parameterized) | Interleaved timing across slots |
 
 ---
+### Response
+
+The hook script exists. I just need to wire the hooks into `.claude/settings.json`.
+
+---
+
+## 2026-03-22 00:54:12
+
+### Prompt
+
+This is a test prompt, verify if this prompt and response are recorded
+
+### Response
+
+Prompt recording is now active. Every prompt you submit and every response Claude gives will be automatically appended to `docs/prompts.md`.
+
+- Hook script: `~/.claude/hooks/record-prompts.sh` (already existed)
+- Config: `.claude/settings.json` — hooks wired for `UserPromptSubmit` and `Stop`
+- Log file: `docs/prompts.md` (already existed with prior history)
+
+---
+
+## 2026-03-22 00:55:13
+
+### Prompt
+
+Load write-spec skill and update the spec that the boolean return type is unsuitable for equity trading, suggest better alternatives
+
+### Response
+
+The spec is updated. Here's a summary of every change:
+
+**New section — `## Return Type`** (before Design):
+- Explains why `boolean` is unsuitable: callers can't schedule precise retries, can't feed retry-after into order management systems, and can't produce machine-readable throttle metadata for audit/risk.
+- Presents three zero-allocation alternatives and recommends **Option A: `long tryAcquire()`** — returns `0` (permit granted) or `> 0` (milliseconds until next permit, i.e. retry-after).
+
+**FR-3** — updated to require both permit decision and retry-after information.
+
+**Algorithm pseudocode** — `return true/false` replaced with `return 0L` / `return (windowDurationMs - (now - oldest))`.
+
+**API signature** — `boolean tryAcquire()` → `long tryAcquire()` with updated Javadoc.
+
+**User stories, edge cases, acceptance criteria** — all updated to reflect the `long` contract.
+
+**Open Questions** — two follow-ups added: clock resolution (ms vs ns for equity infra) and whether `remainingPermits` will eventually be needed (Option C).
+
+---
+
+## 2026-03-22 00:58:10
+
+### Prompt
+
+Load write-java-code and write-java-test and update the code accordingly
+
+### Response
+
+Now rewrite the test file:
+
+---
+
+## 2026-03-22 01:00:23
+
+### Prompt
+
+update the cover image in the README.md if appropriate
+
+### Response
+
+Updated `boolean ok` → `long retryMs` in the banner's code snippet. The README body (algorithm bullets and API example) also still references the old `boolean` / `true`/`false` contract — let me know if you'd like those updated too.
+
+---
+
+## 2026-03-22 01:01:47
+
+### Prompt
+
+git commit and push to origin
+

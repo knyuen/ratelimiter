@@ -48,28 +48,30 @@ public final class SlidingWindowRateLimiter {
     /**
      * Attempts to acquire a permit.
      *
-     * <p>Returns {@code true} and records the current timestamp if fewer than {@code limit}
-     * requests have occurred within the rolling window {@code (now - windowDurationMs, now]}.
-     * Returns {@code false} otherwise. Makes no heap allocations.
+     * <p>Records the current timestamp and returns {@code 0} if fewer than {@code limit} requests
+     * have occurred within the rolling window {@code (now - windowDurationMs, now]}. Returns a
+     * positive value representing the number of milliseconds the caller must wait before the next
+     * permit becomes available (retry-after). Makes no heap allocations.
      *
-     * @return {@code true} if the request is within the rate limit, {@code false} otherwise
+     * @return {@code 0} if the request is permitted; a positive number of milliseconds to wait
+     *     before retrying otherwise
      */
-    public boolean tryAcquire() {
+    public long tryAcquire() {
         long now = clock.getAsLong();
 
         if (count < limit) {
             timestamps[(head + count) % limit] = now;
             count++;
-            return true;
+            return 0L;
         }
 
         long oldest = timestamps[head];
         if (now - oldest >= windowDurationMs) {
             timestamps[head] = now;
             head = (head + 1) % limit;
-            return true;
+            return 0L;
         }
 
-        return false;
+        return windowDurationMs - (now - oldest);
     }
 }
