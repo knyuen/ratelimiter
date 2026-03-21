@@ -82,10 +82,10 @@ docs/
 
 The full prompt/response log is in [`docs/prompts.md`](docs/prompts.md). The session used three Claude Code skills:
 
-| Skill | What it did |
-|---|---|
-| `/write-spec` | Clarified requirements, wrote the spec |
-| `/write-java-code` | Implemented `SlidingWindowRateLimiter.java` |
-| `/write-java-test` | Wrote the full JUnit 5 test suite |
+| Skill | What it did | Source |
+|---|---|---|
+| `/write-spec` | Clarified requirements, wrote the spec | [`docs/skills/write-spec.md`](docs/skills/write-spec.md) |
+| `/write-java-code` | Implemented `SlidingWindowRateLimiter.java` | [`docs/skills/write-java-code.md`](docs/skills/write-java-code.md) |
+| `/write-java-test` | Wrote the full JUnit 5 test suite | [`docs/skills/write-java-test.md`](docs/skills/write-java-test.md) |
 
 A custom hook (`record-prompts`) was also set up during the session to automatically log every prompt and response to `docs/prompts.md`.
