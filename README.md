@@ -1,5 +1,7 @@
 # Rate Limiter
 
+![Rate Limiter](docs/assets/rate-limiter-banner.svg)
+
 A showcase of what happens when you ask [Claude Code](https://claude.ai/claude-code) a single question:
 
 > *"Create a sliding window rate limiter, no GC, O(1) implementation"*
