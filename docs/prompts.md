@@ -1,0 +1,122 @@
+# Prompts & Responses
+
+This file is automatically maintained by a Claude Code hook. Every user prompt and Claude response in this project is appended here when the hook fires.
+
+Hook script: `.claude/hooks/record-prompts.sh`
+Hook events: `UserPromptSubmit` (captures prompt), `Stop` (captures response)
+
+---
+
+## 2026-03-21 16:06
+
+### Prompt
+
+For this project create a docs/prompts.md and add project-specific claude hook to record all prompts and responses, include this one if possible
+
+### Response
+
+Done. Here's what was created:
+
+| File | Purpose |
+|---|---|
+| `.claude/settings.json` | Project-level hooks config wiring `UserPromptSubmit` + `Stop` events |
+| `.claude/hooks/record-prompts.sh` | Script that parses hook JSON from stdin and appends to `docs/prompts.md` |
+| `docs/prompts.md` | The log file, seeded with this conversation |
+
+**How it works:**
+- On `UserPromptSubmit`: hook receives `{"prompt": "..."}` via stdin → appends a `### Prompt` section
+- On `Stop`: hook receives `{"transcript_path": "..."}` via stdin → extracts the last assistant message from the JSONL transcript → appends a `### Response` section
+
+Each entry is timestamped and separated with `---`. From the next prompt onward, logging is fully automatic.
+
+---
+
+## 2026-03-21 16:10
+
+### Prompt
+
+/write-spec Create a sliding window rate limiter, no GC, O(1) implementation
+
+### Response
+
+No issue tracker or git history detected — this is a fresh Java project. I'll work from the description you provided. Before writing the spec, I need to clarify a few things:
+
+---
+
+**Clarifying questions (please answer all in one reply):**
+
+1. **Algorithm variant** — "Sliding window" can mean two things. Which do you want?
+   - *Sliding window log*: exact timestamps per request, precise but memory-heavy
+   - *Sliding window counter*: two adjacent fixed buckets weighted by overlap, approximate but constant-space — this is the typical "no-GC, O(1)" variant. Is this the one?
+
+2. **Scope of "no GC"** — Does this mean:
+   - No heap allocations after initialization (pure off-heap or pre-allocated ring buffers)?
+   - Or just no per-request object allocation (primitives/arrays only, GC may still run)?
+
+3. **Granularity** — Single-key (one global rate) or multi-key (per-user/IP, etc.)? If multi-key, what's the expected key space size?
+
+4. **Concurrency** — Must it be thread-safe? Lock-free? Or single-threaded only?
+
+5. **Configuration** — What parameters does the rate limiter accept? (e.g., `limit`, `windowDurationMs`?) Fixed at construction time or dynamically changeable?
+
+6. **Time source** — System clock (`System.currentTimeMillis`) or injectable clock (for testability)?
+
+7. **Return type** — Should `tryAcquire()` return a boolean? Or also expose remaining capacity and retry-after metadata?
+
+8. **Target Java version** — Any minimum version constraint (e.g., Java 11, 17, 21)?
+
+9. **Out of scope** — Anything you explicitly don't want: persistence, distributed coordination, metrics/observability hooks?
+
+---
+
+## 2026-03-21 16:12
+
+### Prompt
+
+1. Sliding window log 2. no per-request object allocation 3. key is not required 4. single threaded 5. fixed at construction: limt and windowDurationMs 6. injectable clock 7. return boolean 8. latest Java 9. n/a
+
+### Response
+
+Spec written to `docs/specs/sliding-window-log-rate-limiter.md`. Key design decisions captured:
+
+**The core trick** — a ring buffer sized to `limit` is all you need. When full, only the oldest slot (`timestamps[head]`) matters: if it's expired, overwrite it and advance `head`; if not, deny. One array read + optional write = O(1) with zero allocation.
+
+**Boundary condition** — `now - oldest >= windowDurationMs` (inclusive) is explicitly called out in the algorithm and the edge-case table, since off-by-one here is the most common bug.
+
+**Pre-fill phase** — when `count < limit` the buffer isn't full yet, so requests are always allowed and slots fill sequentially (no `head` movement needed).
+
+Let me know if you'd like any section revised, or if you're ready to move to implementation.
+
+---
+
+## 2026-03-21 16:16
+
+### Prompt
+
+use write-java-code and write-java-test skills to implement the main code and test code
+
+### Response
+
+All **17 tests pass** (0 failures, 0 skipped). Here's a summary of what was created:
+
+**`src/main/java/dev/knyuen/ratelimiter/SlidingWindowRateLimiter.java`**
+- `long[] timestamps` ring buffer pre-allocated at construction
+- `tryAcquire()`: one array read, one conditional write — no allocation
+- Guava `Preconditions.checkArgument` / `checkNotNull` for constructor validation
+
+**`src/test/java/dev/knyuen/ratelimiter/SlidingWindowRateLimiterTest.java`**
+
+| Test | Covers |
+|---|---|
+| `WHEN_requests_within_limit_THEN_all_return_true` | First `limit` calls |
+| `WHEN_requests_exceed_limit_THEN_returns_false` | `limit + 1` call |
+| `WHEN_oldest_exactly_at_boundary_THEN_returns_true` | `now - oldest == windowDurationMs` (inclusive) |
+| `WHEN_oldest_just_inside_window_THEN_returns_false` | `windowDurationMs - 1` case |
+| `WHEN_window_expires_THEN_allowed_again` | Full cycle: fill → deny → expire → refill |
+| `GIVEN_limit_1_*` (2 tests) | Minimal buffer edge case |
+| `GIVEN_invalid_limit_*` (3 parameterized) | `0, -1, MIN_VALUE` |
+| `GIVEN_invalid_window_*` (3 parameterized) | `0, -1, MIN_VALUE` |
+| `WHEN_clock_is_null_THEN_throws` | Null clock |
+| `WHEN_requests_arrive_at_different_times_*` (3 parameterized) | Interleaved timing across slots |
+
+---
