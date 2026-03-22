@@ -30,8 +30,8 @@ All in one session, with no manual code written.
 
 A pre-allocated `long[]` ring buffer of size `limit` stores request timestamps. On each `tryAcquire()`:
 
-- **Buffer not full** → record timestamp, return `0`
-- **Buffer full, oldest slot expired** (`now - oldest >= windowDurationMs`) → overwrite slot, advance head, return `0`
+- **Buffer not full** → record timestamp, return `PERMITTED` (`0`)
+- **Buffer full, oldest slot expired** (`now - oldest >= windowDurationMs`) → overwrite slot, advance head, return `PERMITTED` (`0`)
 - **Buffer full, oldest still in window** → return `windowDurationMs - (now - oldest)` (retry-after ms)
 
 One array read, one optional array write. No objects created. No GC pressure.
@@ -52,7 +52,7 @@ var limiter = new SlidingWindowRateLimiter(100, 1_000L, System::currentTimeMilli
 var clock = new AtomicLong(0L);
 var limiter = new SlidingWindowRateLimiter(100, 1_000L, clock::get);
 
-long retryMs = limiter.tryAcquire(); // 0 = permitted; >0 = ms to wait before retrying
+long retryMs = limiter.tryAcquire(); // PERMITTED (0) = allowed; >0 = ms to wait before retrying
 ```
 
 ---

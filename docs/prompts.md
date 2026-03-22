@@ -386,3 +386,58 @@ Done. Commit `6db8a00` pushed.
 
 commit and push
 
+### Response
+
+Both `return 0L` sites now read `return PERMITTED`, and the constant is `package-private` so tests can reference it too (e.g. `assertThat(result).isEqualTo(PERMITTED)`).
+
+---
+
+## 2026-03-22 12:10:15
+
+### Prompt
+
+Does the test use PERMITTED
+
+
+## 2026-03-22 12:10:28
+
+### Prompt
+
+Improve test readability
+
+### Response
+
+Two changes made:
+
+1. **Static import of `PERMITTED`** — `isEqualTo(0L)` in assertions now reads `isEqualTo(PERMITTED)`, making the intent clear (request was allowed, not just "returned zero").
+2. **Parameterized test data** — the `0L` expected values in the interleaved timing test cases now use `PERMITTED`, consistent with the rest.
+
+The two remaining `isGreaterThan(0L)` calls are intentionally left as literals — they express "any positive retry-after", not the `PERMITTED` concept, so the literal is appropriate there.
+
+---
+
+## 2026-03-22 12:12:16
+
+### Prompt
+
+Update any md file if needed
+
+### Response
+
+Two lines updated in `README.md` to reference `PERMITTED` instead of bare `0`, keeping it consistent with the codebase.
+
+---
+
+## 2026-03-22 12:12:56
+
+### Prompt
+
+commit and upsh
+
+
+## 2026-03-22 12:12:58
+
+### Prompt
+
+commit and push
+

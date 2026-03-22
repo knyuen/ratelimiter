@@ -1,5 +1,6 @@
 package dev.knyuen.ratelimiter;
 
+import static dev.knyuen.ratelimiter.SlidingWindowRateLimiter.PERMITTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -35,7 +36,7 @@ class SlidingWindowRateLimiterTest {
     @Test
     void WHEN_requests_within_limit_THEN_all_tryAcquire_return_zero() {
         for (int i = 0; i < DEFAULT_LIMIT; i++) {
-            assertThat(rateLimiter.tryAcquire()).isEqualTo(0L);
+            assertThat(rateLimiter.tryAcquire()).isEqualTo(PERMITTED);
         }
     }
 
@@ -58,7 +59,7 @@ class SlidingWindowRateLimiterTest {
             rateLimiter.tryAcquire();
         }
         clock.set(DEFAULT_WINDOW_MS);
-        assertThat(rateLimiter.tryAcquire()).isEqualTo(0L);
+        assertThat(rateLimiter.tryAcquire()).isEqualTo(PERMITTED);
     }
 
     @Test
@@ -84,7 +85,7 @@ class SlidingWindowRateLimiterTest {
 
         clock.set(DEFAULT_WINDOW_MS);
         for (int i = 0; i < DEFAULT_LIMIT; i++) {
-            assertThat(rateLimiter.tryAcquire()).isEqualTo(0L);
+            assertThat(rateLimiter.tryAcquire()).isEqualTo(PERMITTED);
         }
         assertThat(rateLimiter.tryAcquire()).isGreaterThan(0L);
     }
@@ -97,7 +98,7 @@ class SlidingWindowRateLimiterTest {
     void GIVEN_limit_1_WHEN_rapid_calls_THEN_only_first_returns_zero() {
         var limiter = new SlidingWindowRateLimiter(1, DEFAULT_WINDOW_MS, clock::get);
 
-        assertThat(limiter.tryAcquire()).isEqualTo(0L);
+        assertThat(limiter.tryAcquire()).isEqualTo(PERMITTED);
         assertThat(limiter.tryAcquire()).isGreaterThan(0L);
         assertThat(limiter.tryAcquire()).isGreaterThan(0L);
     }
@@ -108,7 +109,7 @@ class SlidingWindowRateLimiterTest {
 
         limiter.tryAcquire();
         clock.set(DEFAULT_WINDOW_MS);
-        assertThat(limiter.tryAcquire()).isEqualTo(0L);
+        assertThat(limiter.tryAcquire()).isEqualTo(PERMITTED);
     }
 
     // -------------------------------------------------------------------------
@@ -187,14 +188,14 @@ class SlidingWindowRateLimiterTest {
         static Stream<org.junit.jupiter.params.provider.Arguments>
                 WHEN_requests_arrive_at_different_times_THEN_only_in_window_requests_count() {
             // (t0RequestCount, t1Ms, t1RequestCount, t2Ms, expectedResult)
-            // limit=2, window=1000ms; 0L = permitted, >0 = retry-after ms
+            // limit=2, window=1000ms; PERMITTED = 0L, >0 = retry-after ms
             return Stream.of(
                 // 1 req at t=0, 1 at t=500, query at t=1001: oldest(t=0) expired → permitted
-                arguments(1, 500L, 1, 1001L, 0L),
+                arguments(1, 500L, 1, 1001L, PERMITTED),
                 // 2 reqs at t=0, query at t=999: oldest(t=0) still active → retry-after=1ms
                 arguments(2, 0L,   0,  999L, 1L),
                 // 2 reqs at t=0, query at t=1000: oldest(t=0) exactly at boundary → permitted
-                arguments(2, 0L,   0, 1000L, 0L)
+                arguments(2, 0L,   0, 1000L, PERMITTED)
             );
         }
 
