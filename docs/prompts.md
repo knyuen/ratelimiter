@@ -441,3 +441,8 @@ commit and upsh
 
 commit and push
 
+### Response
+
+Two lines updated in `README.md` to reference `PERMITTED` instead of bare `0`, keeping it consistent with the codebase.
+
+---
