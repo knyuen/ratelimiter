@@ -60,18 +60,22 @@ public final class SlidingWindowRateLimiter {
         long now = clock.getAsLong();
 
         if (count < limit) {
-            timestamps[(head + count) % limit] = now;
+            // head is always 0 here; it only advances in the slow path after count == limit
+            timestamps[count] = now;
             count++;
             return 0L;
         }
 
         long oldest = timestamps[head];
-        if (now - oldest >= windowDurationMs) {
+        long elapsed = now - oldest;
+        if (elapsed >= windowDurationMs) {
             timestamps[head] = now;
-            head = (head + 1) % limit;
+            if (++head == limit) {
+                head = 0;
+            }
             return 0L;
         }
 
-        return windowDurationMs - (now - oldest);
+        return windowDurationMs - elapsed;
     }
 }

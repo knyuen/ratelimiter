@@ -198,3 +198,97 @@ Updated `boolean ok` → `long retryMs` in the banner's code snippet. The README
 
 git commit and push to origin
 
+### Response
+
+Updated `boolean ok` → `long retryMs` in the banner's code snippet. The README body (algorithm bullets and API example) also still references the old `boolean` / `true`/`false` contract — let me know if you'd like those updated too.
+
+---
+
+## 2026-03-22 01:03:02
+
+### Prompt
+
+Check if README.md has to be updated as well
+
+### Response
+
+20 tests now (was 17). All three sections need updating:
+
+---
+
+## 2026-03-22 01:04:20
+
+### Prompt
+
+yes
+
+### Response
+
+Done. Pushed as `33c0b68`.
+
+---
+
+## 2026-03-22 11:52:16
+
+### Prompt
+
+review if there is any optimization can be done
+
+### Response
+
+The code is quite clean already. Here are two small but valid optimizations:
+
+**1. Fast path: remove unnecessary `head` addition and modulo**
+
+During the fast path (`count < limit`), `head` is **always `0`** — it only advances in the slow path, which only runs once `count == limit`. So the expression simplifies:
+
+```
+(head + count) % limit  →  count   (since head=0, count < limit)
+```
+
+**2. Slow path: replace modulo with conditional increment**
+
+`head = (head + 1) % limit` performs an integer division at runtime. A branch avoids it and is often faster on modern CPUs:
+
+```java
+if (++head == limit) head = 0;
+```
+
+Applied:
+
+---
+
+## 2026-03-22 11:53:36
+
+### Prompt
+
+load write-java-code skill and review the class
+
+### Response
+
+One violation of the skill's **Braces** convention — line 72 uses a braceless `if` for a single statement:
+
+```java
+if (++head == limit) head = 0;
+```
+
+---
+
+## 2026-03-22 11:54:29
+
+### Prompt
+
+Avoid duplicated (now - oldest)
+
+### Response
+
+`elapsed` is now computed once and reused in both the condition and the return value.
+
+---
+
+## 2026-03-22 11:55:12
+
+### Prompt
+
+commit and push
+
