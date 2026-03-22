@@ -343,3 +343,22 @@ yes
 Before I push — just confirming you want to push to `origin main`. Proceed?
 
 ---
+
+## 2026-03-22 12:06:38
+
+### Prompt
+
+Check untracked file and update .gitignore if needed
+
+### Response
+
+The untracked files are `.idea/gradle.xml`, `.idea/misc.xml`, and `.idea/vcs.xml` — IntelliJ project files. The `.gitignore` already excludes several `.idea/` files but not these three. Adding them:
+
+---
+
+## 2026-03-22 12:07:02
+
+### Prompt
+
+yes
+
