@@ -31,6 +31,22 @@ When implementing functionality that these libraries cover, prefer them over cus
 - **Google Guava** — collections, caching, string utilities, preconditions, I/O helpers, etc.
 - **Apache Commons** (Lang, Collections, IO, etc.) — string/array utilities, file I/O, reflection helpers, etc.
 
+## Local Variables
+
+Always declare local variables as `final` when they are not reassigned after initialization.
+
+  **Avoid:**
+  ```java
+  String name = user.getName();
+  int count = list.size();
+  ```
+
+  **Prefer:**
+  ```java
+  final String name = user.getName();
+  final int count = list.size();
+  ```
+
 ## Braces
 
 Always use curly braces for `if`, `else`, and `for` bodies, even when the body is a single statement.

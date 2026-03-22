@@ -57,7 +57,7 @@ public final class SlidingWindowRateLimiter {
      *     before retrying otherwise
      */
     public long tryAcquire() {
-        long now = clock.getAsLong();
+        final long now = clock.getAsLong();
 
         if (count < limit) {
             // head is always 0 here; it only advances in the slow path after count == limit
@@ -66,8 +66,8 @@ public final class SlidingWindowRateLimiter {
             return 0L;
         }
 
-        long oldest = timestamps[head];
-        long elapsed = now - oldest;
+        final long oldest = timestamps[head];
+        final long elapsed = now - oldest;
         if (elapsed >= windowDurationMs) {
             timestamps[head] = now;
             if (++head == limit) {

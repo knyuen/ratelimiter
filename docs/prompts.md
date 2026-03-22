@@ -292,3 +292,37 @@ Avoid duplicated (now - oldest)
 
 commit and push
 
+### Response
+
+`elapsed` is now computed once and reused in both the condition and the return value.
+
+---
+
+## 2026-03-22 12:04:05
+
+### Prompt
+
+load write-java-code skill and review the class
+
+### Response
+
+The skill now includes a **Local Variables** rule (new since last review): declare local variables `final` when not reassigned.
+
+Reviewing `tryAcquire()` against this:
+
+```java
+long now = clock.getAsLong();    // never reassigned → should be final
+long oldest = timestamps[head];  // never reassigned → should be final
+long elapsed = now - oldest;     // never reassigned → should be final
+```
+
+All three violations. Fixing them:
+
+---
+
+## 2026-03-22 12:05:49
+
+### Prompt
+
+commit and push
+
