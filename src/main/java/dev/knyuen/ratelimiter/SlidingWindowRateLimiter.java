@@ -16,6 +16,8 @@ import java.util.function.LongSupplier;
  */
 public final class SlidingWindowRateLimiter {
 
+    static final long PERMITTED = 0L;
+
     private final long[] timestamps;
     private final long windowDurationMs;
     private final LongSupplier clock;
@@ -63,7 +65,7 @@ public final class SlidingWindowRateLimiter {
             // head is always 0 here; it only advances in the slow path after count == limit
             timestamps[count] = now;
             count++;
-            return 0L;
+            return PERMITTED;
         }
 
         final long oldest = timestamps[head];
@@ -73,7 +75,7 @@ public final class SlidingWindowRateLimiter {
             if (++head == limit) {
                 head = 0;
             }
-            return 0L;
+            return PERMITTED;
         }
 
         return windowDurationMs - elapsed;
